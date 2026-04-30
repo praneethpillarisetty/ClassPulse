@@ -3,36 +3,28 @@ export const STORAGE_KEYS = {
   AUTH: 'authState',
   USER: 'canvasUser',
   ASSIGNMENTS: 'assignments',
+  COURSES: 'courses',
   LAST_SYNC_AT: 'lastSyncAt',
   NOTIFICATIONS_SENT: 'notificationsSent',
-  CHECKLISTS: 'checklists',
   PLANNED: 'plannedAssignments'
 };
 
 export const DEFAULT_SETTINGS = {
-  baseUrl: '',
-  token: '',
-  darkMode: false,
-  reminderWindows: { today: true, tomorrow: true, in3Days: true }
+  showInactiveCourses: false,
+  showUndatedAssignments: false,
+  showOverdue24h: false,
+  notificationsEnabled: true,
+  reminderWindows: { in3Days: true, tomorrow: true, today: true, in1Hour: true },
+  syncIntervalMinutes: 30
 };
 
-export function normalizeBaseUrl(baseUrl) { return baseUrl ? baseUrl.trim().replace(/\/+$/, '') : ''; }
-export function safeDate(dateLike) { const d = dateLike ? new Date(dateLike) : null; return d && !Number.isNaN(d.getTime()) ? d : null; }
-export function formatDateTime(dateLike) { const d = safeDate(dateLike); return d ? new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(d) : 'No due date'; }
-export function sortAssignmentsByDueDate(assignments=[]) { return [...assignments].sort((a,b)=>(safeDate(a.dueAt)?.getTime()??Number.MAX_SAFE_INTEGER)-(safeDate(b.dueAt)?.getTime()??Number.MAX_SAFE_INTEGER)); }
-export function buildReminderKey(assignmentId, window) { return `${assignmentId}:${window}`; }
-export function getDeadlineWindow(dueAt) {
-  const due = safeDate(dueAt); if (!due) return 'no_due_date';
-  const now = new Date();
-  const today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
-  const dayAfter = new Date(tomorrow); dayAfter.setDate(dayAfter.getDate()+1);
-  const in3 = new Date(today); in3.setDate(in3.getDate()+3);
-  const in4 = new Date(today); in4.setDate(in4.getDate()+4);
-  if (due < now) return 'overdue';
-  if (due>=today && due<tomorrow) return 'due_today';
-  if (due>=tomorrow && due<dayAfter) return 'due_tomorrow';
-  if (due>=in3 && due<in4) return 'due_in_3_days';
-  return 'upcoming';
-}
-export function statusBadge(a){ if(a.submissionStatus==='submitted') return {label:'Submitted',type:'submitted'}; if(getDeadlineWindow(a.dueAt)==='overdue') return {label:'Overdue',type:'overdue'}; if(getDeadlineWindow(a.dueAt)==='due_today') return {label:'Due Today',type:'today'}; return {label:'Upcoming',type:'upcoming'}; }
+export const COURSE_PALETTE = ['#4f46e5','#0ea5e9','#f97316','#16a34a','#db2777','#7c3aed','#0891b2','#ca8a04'];
+
+export const normalizeBaseUrl = (url='') => url.trim().replace(/\/+$/, '');
+export function isValidCanvasUrl(url=''){ try{const u=new URL(normalizeBaseUrl(url)); return /^https?:$/.test(u.protocol);}catch{return false;} }
+export const safeDate = (v)=>{const d=v?new Date(v):null;return d&&!Number.isNaN(d.getTime())?d:null;};
+export const nowIso=()=>new Date().toISOString();
+export const formatDateTime=(v)=>{const d=safeDate(v);return d?new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(d):'No due date';};
+export const hashString=(s='')=>Array.from(s).reduce((a,c)=>((a<<5)-a+c.charCodeAt(0))|0,0);
+export const courseColor=(course)=>COURSE_PALETTE[Math.abs(hashString(`${course.id}-${course.name}`))%COURSE_PALETTE.length];
+export const buildReminderKey=(id,w)=>`${id}-${w}`;
