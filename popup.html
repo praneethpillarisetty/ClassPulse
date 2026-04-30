@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClassPulse</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <header class="top">
+        <h1>ClassPulse</h1>
+        <button id="syncBtn">Sync Now</button>
+      </header>
+      <p id="studentName" class="student-name">Not connected</p>
+      <div class="filters">
+        <input id="searchInput" type="search" placeholder="Search assignments or course" />
+        <select id="courseFilter">
+          <option value="">All Courses</option>
+        </select>
+      </div>
+      <p id="status" class="status"></p>
+      <section id="assignmentList" class="list"></section>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

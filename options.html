@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClassPulse Options</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>ClassPulse Options</h1>
+      <label>Canvas Base URL <input id="baseUrl" type="url" placeholder="https://school.instructure.com" /></label>
+      <label>Canvas Access Token <input id="token" type="password" placeholder="Canvas token" /></label>
+      <fieldset>
+        <legend>Reminder Windows</legend>
+        <label><input id="dueToday" type="checkbox" /> Due Today</label>
+        <label><input id="dueTomorrow" type="checkbox" /> Due Tomorrow</label>
+        <label><input id="in3Days" type="checkbox" /> Due in 3 Days</label>
+      </fieldset>
+      <div class="actions">
+        <button id="saveBtn">Save Settings</button>
+        <button id="testBtn" class="secondary">Test Connection</button>
+      </div>
+      <p id="status"></p>
+      <section class="privacy-note">
+        <h2>Privacy Note</h2>
+        <p>ClassPulse stores your Canvas token and assignment data only in local Chrome storage. No analytics, no AI, and no data is sent to external servers.</p>
+      </section>
+    </main>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>
