@@ -1,68 +1,46 @@
 # ClassPulse (Chrome Extension MV3)
 
-ClassPulse is a student productivity extension for Canvas LMS. It helps students stay organized by syncing assignments, showing due dates and submission status, and sending reminders. It **does not** solve homework, generate assignment answers, or bypass academic integrity.
+ClassPulse is a Canvas LMS student extension with a secure **Connect Canvas** flow and a manual token fallback.
 
-## What the extension does
+## Why silent auto-login is not allowed
 
-- Connects to Canvas using a student-provided base URL and access token.
-- Syncs active courses and upcoming assignments.
-- Shows a popup dashboard with:
-  - Student name
-  - Sorted upcoming assignments
-  - Status badges (Due Today, Due Tomorrow, Upcoming, Overdue, Submitted, Missing)
-  - Search and course filter
-  - Sync Now action
-- Runs periodic sync using `chrome.alarms`.
-- Sends reminder notifications for due windows (today/tomorrow/in 3 days).
-- Avoids duplicate notifications per assignment + reminder window.
-- Injects a right-side panel on Canvas assignment pages with due info and a local checklist.
+ClassPulse does **not** scrape cookies, read Canvas session tokens, or silently log users in. Those patterns are unsafe and violate user trust and common extension security expectations.
 
-## Install as an unpacked extension
+## How Canvas OAuth works in ClassPulse
 
-1. Download or clone this folder.
-2. Open Chrome and navigate to `chrome://extensions`.
-3. Enable **Developer mode**.
-4. Click **Load unpacked** and select this project directory.
-5. Open the extension’s **Options** page and add your Canvas settings.
+1. Student enters Canvas base URL (example: `https://school.instructure.com`).
+2. ClassPulse opens `https://<canvas>/login/oauth2/auth` using `chrome.identity.launchWebAuthFlow`.
+3. Request includes `client_id`, `response_type=code`, `redirect_uri`, and `state`.
+4. After user consent, Canvas redirects to the extension redirect URL with an authorization `code`.
+5. Code is exchanged for a token **only** if secure token exchange is configured.
 
-## How to create a Canvas access token
+## Why a Canvas Developer Key may be required
 
-1. Sign in to your Canvas account in a browser.
-2. Open **Account** → **Settings**.
-3. Scroll to **Approved Integrations**.
-4. Click **+ New Access Token**.
-5. Give it a name (example: `ClassPulse`) and optionally an expiration date.
-6. Copy the generated token and paste it into ClassPulse Options.
+Canvas OAuth typically needs an institution-managed Developer Key (`client_id`, usually with secure secret handling). If unavailable, ClassPulse shows a clear message and keeps manual access token mode available.
 
-> Keep your token private. Anyone with the token can access your Canvas data according to your account permissions.
+## Manual token fallback
 
-## Required permissions and why
+In Options:
+- Add Canvas URL
+- Paste access token
+- Save manual mode
 
-- `storage`: Save settings, synced assignments, and checklist state locally.
-- `alarms`: Periodic background sync.
-- `notifications`: Due-date reminders.
-- `tabs`: Open Canvas assignment links from popup cards.
-- `host_permissions` (`*.instructure.com`): Call Canvas API and run content script on Canvas assignment pages.
+ClassPulse stores auth state in `chrome.storage.local` and uses it for sync/notifications.
 
-## Privacy & security
+## Local testing (unpacked)
 
-- No external analytics.
-- No third-party servers.
-- No AI features.
-- No homework-answer generation.
-- Token and synced data are stored only in `chrome.storage.local`.
+1. Open `chrome://extensions`.
+2. Enable **Developer mode**.
+3. Click **Load unpacked** and select this folder.
+4. Open ClassPulse Options and connect using OAuth placeholder flow or manual token.
+5. Use popup **Sync** to fetch assignments.
 
-## Known limitations
+## Files
 
-- `bucket=upcoming` may omit some past assignments from API results.
-- Submission status depends on Canvas permissions and course settings.
-- Content panel appears only on URL patterns matching Canvas assignment pages.
-- Local checklists are per-browser profile and not cross-device unless browser sync/storage policy handles it externally.
-
-## Future features
-
-- Per-course reminder customization.
-- Calendar export (ICS).
-- More robust conflict-aware schedule planning tools.
-- Optional assignment timeline and weekly workload view.
-
+- `manifest.json` MV3 config and permissions.
+- `auth.js` OAuth architecture + placeholders.
+- `background.js` scheduled sync and reminders.
+- `popup.*` dashboard + onboarding UX.
+- `options.*` connection management and privacy.
+- `canvasApi.js` Canvas API calls.
+- `content.*` in-page assignment context card.

@@ -2,31 +2,23 @@ import { normalizeBaseUrl } from './utils.js';
 
 async function apiFetch(path, { baseUrl, token, query } = {}) {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
-  if (!normalizedBaseUrl || !token) {
-    throw new Error('Canvas base URL and access token are required.');
-  }
+  if (!normalizedBaseUrl || !token) throw new Error('Canvas base URL and access token are required.');
 
   const url = new URL(path, `${normalizedBaseUrl}/`);
   if (query && typeof query === 'object') {
-    Object.entries(query).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        url.searchParams.set(key, value);
-      }
-    });
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
+    }
   }
 
   const response = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
   });
 
   if (!response.ok) {
     const text = await response.text();
     throw new Error(`Canvas API error (${response.status}): ${text || response.statusText}`);
   }
-
   return response;
 }
 
@@ -48,23 +40,11 @@ async function fetchAllPages(path, config) {
   while (firstPass || nextUrl) {
     const response = firstPass
       ? await apiFetch(path, config)
-      : await fetch(nextUrl, {
-          headers: {
-            Authorization: `Bearer ${config.token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+      : await fetch(nextUrl, { headers: { Authorization: `Bearer ${config.token}` } });
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Canvas pagination error (${response.status}): ${text || response.statusText}`);
-    }
-
-    const pageData = await response.json();
-    if (Array.isArray(pageData)) {
-      results.push(...pageData);
-    }
-
+    if (!response.ok) throw new Error(`Canvas pagination error (${response.status}).`);
+    const data = await response.json();
+    if (Array.isArray(data)) results.push(...data);
     nextUrl = parseNextLink(response.headers.get('Link'));
     firstPass = false;
   }
@@ -80,21 +60,18 @@ export async function fetchCurrentUser(config) {
 export async function fetchActiveCourses(config) {
   return fetchAllPages('/api/v1/courses', {
     ...config,
-    query: { enrollment_state: 'active', per_page: '100' }
+    query: { enrollment_state: 'active', per_page: '100', include: ['term'] }
   });
 }
 
 export async function fetchCourseAssignments(courseId, config) {
   return fetchAllPages(`/api/v1/courses/${courseId}/assignments`, {
     ...config,
-    query: { bucket: 'upcoming', per_page: '100' }
+    query: { per_page: '100' }
   });
 }
 
 export async function fetchSubmission(courseId, assignmentId, config) {
-  const response = await apiFetch(
-    `/api/v1/courses/${courseId}/assignments/${assignmentId}/submissions/self`,
-    config
-  );
+  const response = await apiFetch(`/api/v1/courses/${courseId}/assignments/${assignmentId}/submissions/self`, config);
   return response.json();
 }

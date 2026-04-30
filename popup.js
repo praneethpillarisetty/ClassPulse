@@ -1,117 +1,18 @@
-import { STORAGE_KEYS, formatDateTime, sortAssignmentsByDueDate, statusBadge } from './utils.js';
+import { STORAGE_KEYS, statusBadge, formatDateTime, sortAssignmentsByDueDate } from './utils.js';
 
-const studentNameEl = document.getElementById('studentName');
-const statusEl = document.getElementById('status');
-const listEl = document.getElementById('assignmentList');
-const searchInputEl = document.getElementById('searchInput');
-const courseFilterEl = document.getElementById('courseFilter');
-const syncBtnEl = document.getElementById('syncBtn');
-
-let allAssignments = [];
-
+const app = document.getElementById('app');
 init();
-
-async function init() {
-  await loadData();
-  searchInputEl.addEventListener('input', render);
-  courseFilterEl.addEventListener('change', render);
-  syncBtnEl.addEventListener('click', handleSync);
+async function init(){
+  const data = await chrome.storage.local.get([STORAGE_KEYS.AUTH, STORAGE_KEYS.USER, STORAGE_KEYS.ASSIGNMENTS, STORAGE_KEYS.SETTINGS]);
+  const settings = data[STORAGE_KEYS.SETTINGS] || {};
+  document.body.classList.toggle('dark', Boolean(settings.darkMode));
+  if (!data[STORAGE_KEYS.AUTH] && !(settings.baseUrl && settings.token)) return renderOnboarding();
+  renderDashboard(data);
 }
-
-async function loadData() {
-  const data = await chrome.storage.local.get([
-    STORAGE_KEYS.USER,
-    STORAGE_KEYS.ASSIGNMENTS,
-    STORAGE_KEYS.LAST_SYNC_AT
-  ]);
-
-  const user = data[STORAGE_KEYS.USER];
-  allAssignments = sortAssignmentsByDueDate(data[STORAGE_KEYS.ASSIGNMENTS] || []);
-
-  studentNameEl.textContent = user?.name ? `Hi, ${user.name}` : 'Connect Canvas in Options to begin.';
-  statusEl.textContent = data[STORAGE_KEYS.LAST_SYNC_AT]
-    ? `Last synced: ${new Date(data[STORAGE_KEYS.LAST_SYNC_AT]).toLocaleString()}`
-    : 'No sync yet';
-
-  hydrateCourseFilter(allAssignments);
-  render();
-}
-
-function hydrateCourseFilter(assignments) {
-  const courses = [...new Set(assignments.map((a) => a.courseName))];
-  courseFilterEl.innerHTML = '<option value="">All Courses</option>';
-  courses.forEach((course) => {
-    const option = document.createElement('option');
-    option.value = course;
-    option.textContent = course;
-    courseFilterEl.appendChild(option);
-  });
-}
-
-function render() {
-  const searchTerm = searchInputEl.value.trim().toLowerCase();
-  const selectedCourse = courseFilterEl.value;
-
-  const filtered = allAssignments.filter((assignment) => {
-    const matchesSearch =
-      !searchTerm ||
-      assignment.name.toLowerCase().includes(searchTerm) ||
-      assignment.courseName.toLowerCase().includes(searchTerm);
-    const matchesCourse = !selectedCourse || assignment.courseName === selectedCourse;
-    return matchesSearch && matchesCourse;
-  });
-
-  if (!filtered.length) {
-    listEl.innerHTML = '<div class="empty">No assignments found.</div>';
-    return;
-  }
-
-  listEl.innerHTML = '';
-  filtered.forEach((assignment) => {
-    const card = document.createElement('article');
-    card.className = 'card';
-
-    const badge = statusBadge(assignment);
-
-    card.innerHTML = `
-      <h3>${escapeHtml(assignment.name)}</h3>
-      <div class="meta">${escapeHtml(assignment.courseName)}</div>
-      <div class="meta">Due: ${formatDateTime(assignment.dueAt)}</div>
-      <div class="row">
-        <span class="badge ${badge.type}">${badge.label}</span>
-        <a class="open-link" href="#">Open in Canvas</a>
-      </div>
-    `;
-
-    card.querySelector('.open-link').addEventListener('click', async (event) => {
-      event.preventDefault();
-      await chrome.tabs.create({ url: assignment.htmlUrl });
-    });
-
-    listEl.appendChild(card);
-  });
-}
-
-async function handleSync() {
-  statusEl.textContent = 'Syncing…';
-  syncBtnEl.disabled = true;
-  try {
-    const response = await chrome.runtime.sendMessage({ type: 'SYNC_NOW' });
-    if (!response?.ok) throw new Error(response?.error || 'Unknown sync error');
-    await loadData();
-    statusEl.textContent = 'Sync complete';
-  } catch (error) {
-    statusEl.textContent = `Sync failed: ${error.message}`;
-  } finally {
-    syncBtnEl.disabled = false;
-  }
-}
-
-function escapeHtml(value) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
+function renderOnboarding(){app.innerHTML=`<section class='wrap'><div class='card'><h1>ClassPulse</h1><p class='muted'>Your Canvas command center</p><button id='openOptions' class='btn'>Connect Canvas</button><button id='manual' class='btn ghost'>Use access token instead</button><p class='muted'>Your data stays in your browser.</p></div></section>`;document.getElementById('openOptions').onclick=()=>chrome.runtime.openOptionsPage();document.getElementById('manual').onclick=()=>chrome.runtime.openOptionsPage();}
+function renderDashboard(data){const a=sortAssignmentsByDueDate(data[STORAGE_KEYS.ASSIGNMENTS]||[]);const user=data[STORAGE_KEYS.USER];const stats={total:a.length,dueToday:a.filter(x=>statusBadge(x).type==='today').length,overdue:a.filter(x=>statusBadge(x).type==='overdue').length,submitted:a.filter(x=>x.submissionStatus==='submitted').length};app.innerHTML=`<section class='wrap'><div class='card top'><div><strong>${user?.name?`Hi, ${user.name}`:'Hi there'}</strong><div class='muted'>Today</div></div><div><button id='sync' class='btn'>Sync</button> <button id='toggleTheme' class='btn ghost'>Theme</button></div></div><div class='card'>Total ${stats.total} · Today ${stats.dueToday} · Overdue ${stats.overdue} · Submitted ${stats.submitted}</div><div class='card grid'><input id='search' placeholder='Search assignments'><select id='course'><option value=''>All courses</option>${[...new Set(a.map(x=>x.courseName))].map(c=>`<option>${c}</option>`).join('')}</select></div><div id='list'></div></section>`;document.getElementById('sync').onclick=sync;document.getElementById('toggleTheme').onclick=toggleTheme;const r=()=>renderList(a);document.getElementById('search').oninput=r;document.getElementById('course').onchange=r;renderList(a);}
+function renderList(all){const s=document.getElementById('search')?.value?.toLowerCase()||'';const c=document.getElementById('course')?.value||'';const list=document.getElementById('list');if(!list) return;const f=all.filter(x=>(!s||x.name.toLowerCase().includes(s)||x.courseName.toLowerCase().includes(s))&&(!c||x.courseName===c));if(!all.length){list.innerHTML="<div class='card muted'>No assignments yet. Sync to get started.</div>";return;}if(!f.length){list.innerHTML="<div class='card muted'>No matches found.</div>";return;}list.innerHTML=f.map(x=>{const b=statusBadge(x);return `<article class='card assignment' style='border-left-color:${x.courseColor||'#8fb3ff'}'><div class='top'><strong>${escapeHtml(x.name)}</strong><span class='badge'>${b.label}</span></div><div class='muted'>${escapeHtml(x.courseName)} · ${formatDateTime(x.dueAt)} · ${x.pointsPossible??'—'} pts</div><div class='top'><button class='btn ghost open' data-url='${x.htmlUrl}'>Open in Canvas</button><button class='btn ghost plan' data-id='${x.id}'>Mark as planned</button></div></article>`;}).join('');list.querySelectorAll('.open').forEach(b=>b.onclick=()=>chrome.tabs.create({url:b.dataset.url}));list.querySelectorAll('.plan').forEach(b=>b.onclick=()=>markPlanned(b.dataset.id));}
+async function markPlanned(id){const d=await chrome.storage.local.get(STORAGE_KEYS.PLANNED);const p=d[STORAGE_KEYS.PLANNED]||{};p[id]=new Date().toISOString();await chrome.storage.local.set({[STORAGE_KEYS.PLANNED]:p});}
+async function sync(){const list=document.getElementById('list');list.innerHTML="<div class='skeleton'></div><div class='skeleton'></div>";await chrome.runtime.sendMessage({type:'SYNC_NOW'});init();}
+async function toggleTheme(){const d=await chrome.storage.local.get(STORAGE_KEYS.SETTINGS);const s=d[STORAGE_KEYS.SETTINGS]||{};s.darkMode=!s.darkMode;await chrome.storage.local.set({[STORAGE_KEYS.SETTINGS]:s});document.body.classList.toggle('dark',s.darkMode);} 
+function escapeHtml(v){return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');}
