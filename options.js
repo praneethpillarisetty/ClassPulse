@@ -1,61 +1,10 @@
 import { DEFAULT_SETTINGS, STORAGE_KEYS, normalizeBaseUrl } from './utils.js';
-import { fetchCurrentUser } from './canvasApi.js';
+import { startCanvasOAuth, disconnectCanvas } from './auth.js';
 
-const baseUrlEl = document.getElementById('baseUrl');
-const tokenEl = document.getElementById('token');
-const dueTodayEl = document.getElementById('dueToday');
-const dueTomorrowEl = document.getElementById('dueTomorrow');
-const in3DaysEl = document.getElementById('in3Days');
-const saveBtnEl = document.getElementById('saveBtn');
-const testBtnEl = document.getElementById('testBtn');
-const statusEl = document.getElementById('status');
-
+const baseUrlEl=document.getElementById('baseUrl'); const tokenEl=document.getElementById('token'); const statusEl=document.getElementById('status');
 init();
-
-async function init() {
-  await loadSettings();
-  saveBtnEl.addEventListener('click', saveSettings);
-  testBtnEl.addEventListener('click', testConnection);
-}
-
-async function loadSettings() {
-  const { [STORAGE_KEYS.SETTINGS]: settings = DEFAULT_SETTINGS } = await chrome.storage.local.get(
-    STORAGE_KEYS.SETTINGS
-  );
-
-  baseUrlEl.value = settings.baseUrl || '';
-  tokenEl.value = settings.token || '';
-  dueTodayEl.checked = settings.reminderWindows?.today ?? true;
-  dueTomorrowEl.checked = settings.reminderWindows?.tomorrow ?? true;
-  in3DaysEl.checked = settings.reminderWindows?.in3Days ?? true;
-}
-
-async function saveSettings() {
-  const settings = readFormSettings();
-  await chrome.storage.local.set({ [STORAGE_KEYS.SETTINGS]: settings });
-  statusEl.textContent = 'Settings saved.';
-}
-
-async function testConnection() {
-  const settings = readFormSettings();
-  statusEl.textContent = 'Testing connection…';
-
-  try {
-    const user = await fetchCurrentUser({ baseUrl: settings.baseUrl, token: settings.token });
-    statusEl.textContent = `Connected as ${user.name}`;
-  } catch (error) {
-    statusEl.textContent = `Connection failed: ${error.message}`;
-  }
-}
-
-function readFormSettings() {
-  return {
-    baseUrl: normalizeBaseUrl(baseUrlEl.value),
-    token: tokenEl.value.trim(),
-    reminderWindows: {
-      today: dueTodayEl.checked,
-      tomorrow: dueTomorrowEl.checked,
-      in3Days: in3DaysEl.checked
-    }
-  };
-}
+async function init(){const d=await chrome.storage.local.get([STORAGE_KEYS.SETTINGS,STORAGE_KEYS.AUTH]);const s=d[STORAGE_KEYS.SETTINGS]||DEFAULT_SETTINGS;baseUrlEl.value=s.baseUrl||'';tokenEl.value=s.token||'';dueToday.checked=s.reminderWindows.today;dueTomorrow.checked=s.reminderWindows.tomorrow;in3Days.checked=s.reminderWindows.in3Days;connStatus.textContent=d[STORAGE_KEYS.AUTH]?`Connected (${d[STORAGE_KEYS.AUTH].mode})`:'Not connected';
+document.getElementById('connectBtn').onclick=connect;document.getElementById('disconnectBtn').onclick=disconnect;document.getElementById('saveManualBtn').onclick=saveManual;}
+async function connect(){try{statusEl.textContent='Opening Canvas authorization…';await startCanvasOAuth({baseUrl:baseUrlEl.value});statusEl.textContent='Canvas connected.';init();}catch(e){statusEl.textContent=e.message;}}
+async function disconnect(){await disconnectCanvas();statusEl.textContent='Disconnected.';init();}
+async function saveManual(){const settings={baseUrl:normalizeBaseUrl(baseUrlEl.value),token:tokenEl.value.trim(),darkMode:false,reminderWindows:{today:dueToday.checked,tomorrow:dueTomorrow.checked,in3Days:in3Days.checked}};await chrome.storage.local.set({[STORAGE_KEYS.SETTINGS]:settings,[STORAGE_KEYS.AUTH]:{mode:'manual_token',canvasBaseUrl:settings.baseUrl,accessToken:settings.token,connectedAt:new Date().toISOString()}});statusEl.textContent='Manual token saved.';}
