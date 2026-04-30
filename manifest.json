@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "ClassPulse",
+  "description": "Canvas LMS productivity assistant for tracking assignments, deadlines, and reminders.",
+  "version": "1.0.0",
+  "action": {
+    "default_title": "ClassPulse",
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*.instructure.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.instructure.com/courses/*/assignments/*",
+        "http://localhost/courses/*/assignments/*",
+        "http://127.0.0.1/courses/*/assignments/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content.css"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
