@@ -1,1 +1,58 @@
-<!doctype html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>ClassPulse Options</title><link rel='stylesheet' href='options.css'></head><body><main class='container'><h1>ClassPulse Setup</h1><p class='sub'>Your Canvas command center</p><section class='card'><h2>Step 1: Canvas URL</h2><input id='baseUrl' placeholder='https://school.instructure.com'></section><section class='card'><h2>Step 2: Access Token</h2><input id='token' type='password' placeholder='Canvas access token'></section><section class='card'><h2>Step 3: Test connection</h2><button id='testBtn'>Test Connection</button><p id='testResult'></p></section><section class='card'><h2>Step 4: Save and sync</h2><button id='saveBtn'>Save & Sync</button><button id='disconnectBtn' class='secondary'>Disconnect</button><p id='status'></p></section><section class='card'><h2>Settings</h2><label><input type='checkbox' id='showInactiveCourses'> Show inactive/old courses</label><label><input type='checkbox' id='showUndatedAssignments'> Show assignments without due date</label><label><input type='checkbox' id='showOverdue24h'> Show overdue assignments for 24 hours</label><label><input type='checkbox' id='notificationsEnabled'> Enable notifications</label><label><input type='checkbox' id='in3Days'> Due in 3 days</label><label><input type='checkbox' id='tomorrow'> Due tomorrow</label><label><input type='checkbox' id='today'> Due today</label><label><input type='checkbox' id='in1Hour'> Due in 1 hour</label></section><section class='card'><p>Your Canvas token and assignment data stay inside your browser. ClassPulse does not send your data to any external server.</p></section></main><script type='module' src='options.js'></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ClassPulse Options</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="brand"><div class="logo">CP</div><div><h1>ClassPulse Setup</h1><p>Your Canvas command center</p></div></div>
+      <div id="connectionBadge" class="connection-badge">Not connected</div>
+    </section>
+
+    <section class="grid">
+      <section class="card steps-card">
+        <div class="step"><span>1</span><div><h2>Canvas URL</h2><p>Use your school Canvas URL.</p><input id="baseUrl" placeholder="https://school.instructure.com" /></div></div>
+        <div class="step"><span>2</span><div><h2>Access Token</h2><p>Paste your Canvas token. It is stored locally only.</p><input id="token" type="password" placeholder="Canvas access token" /></div></div>
+        <div class="button-row">
+          <button id="testBtn" class="secondary">Test Connection</button>
+          <button id="saveBtn" class="primary">Save & Sync</button>
+        </div>
+        <p id="testResult" class="result"></p>
+        <p id="status" class="result"></p>
+      </section>
+
+      <aside class="card privacy-card">
+        <h2>Privacy first</h2>
+        <p>Your Canvas token and assignment data stay inside your browser. ClassPulse does not send your data to any external server.</p>
+        <button id="disconnectBtn" class="danger">Disconnect & Clear Local Data</button>
+      </aside>
+    </section>
+
+    <section class="card">
+      <div class="section-title"><h2>Course & assignment display</h2><p>Control what appears in the popup.</p></div>
+      <div class="settings-grid">
+        <label class="toggle"><input type="checkbox" id="showInactiveCourses"><span></span><div><strong>Show inactive/old courses</strong><small>Useful when you want older Canvas courses visible.</small></div></label>
+        <label class="toggle"><input type="checkbox" id="showUndatedAssignments"><span></span><div><strong>Show assignments without due date</strong><small>By default, ClassPulse focuses on deadlines.</small></div></label>
+        <label class="toggle"><input type="checkbox" id="showOverdue24h"><span></span><div><strong>Show overdue for 24 hours</strong><small>Past deadlines are hidden unless this is enabled.</small></div></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title"><h2>Deadline notifications</h2><p>Chrome notifications appear automatically when Canvas deadlines approach.</p></div>
+      <div class="settings-grid">
+        <label class="toggle"><input type="checkbox" id="notificationsEnabled"><span></span><div><strong>Enable notifications</strong><small>Uses Chrome and your operating system notification settings.</small></div></label>
+        <label class="toggle compact"><input type="checkbox" id="in3Days"><span></span><div><strong>Due in 3 days</strong></div></label>
+        <label class="toggle compact"><input type="checkbox" id="tomorrow"><span></span><div><strong>Due tomorrow</strong></div></label>
+        <label class="toggle compact"><input type="checkbox" id="today"><span></span><div><strong>Due today</strong></div></label>
+        <label class="toggle compact"><input type="checkbox" id="in1Hour"><span></span><div><strong>Due in 1 hour</strong></div></label>
+      </div>
+      <div class="button-row left"><button id="testNotificationBtn" class="secondary">Send Test Notification</button><p id="notificationResult" class="result inline"></p></div>
+    </section>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

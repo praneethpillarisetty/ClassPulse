@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "ClassPulse",
-  "description": "Your Canvas command center.",
-  "version": "2.0.1",
+  "description": "Canvas assignment tracker and deadline reminders for students.",
+  "version": "2.0.2",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -24,22 +24,14 @@
     "service_worker": "background.js",
     "type": "module"
   },
-  "permissions": ["storage", "alarms", "notifications", "tabs", "identity"],
+  "permissions": ["storage", "alarms", "notifications", "tabs"],
   "host_permissions": [
-    "https://*.instructure.com/*",
-    "http://localhost/*",
-    "http://127.0.0.1/*"
+    "https://*.instructure.com/*"
   ],
-  "oauth2": {
-    "client_id": "CANVAS_CLIENT_ID_PLACEHOLDER",
-    "scopes": []
-  },
   "content_scripts": [
     {
       "matches": [
-        "https://*.instructure.com/courses/*/assignments/*",
-        "http://localhost/courses/*/assignments/*",
-        "http://127.0.0.1/courses/*/assignments/*"
+        "https://*.instructure.com/courses/*/assignments/*"
       ],
       "js": ["content.js"],
       "css": ["content.css"],
